@@ -34,7 +34,7 @@ NOTE that plan_and_execute_node requires the Mobipick labs software available se
 The AGR planner can request actions such as:
 
 - Inspect containers -> <status> where status = {empty,not empty}
-- Inspect assembly progress -> <assembly> where <pre> `assembly = <v_p ∈ {0,1} for all p ∈ P>` </pre>, a binary array over the list of parts.
+- Inspect assembly progress -> <assembly>, a binary array over the list of parts: <pre> `assembly = <v_p ∈ {0,1} for all p ∈ P>` </pre>
 - Perceive hotel type -> <type> where type = {type1, type2}
 
 ## Testing/validation methodology
