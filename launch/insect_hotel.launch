@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<launch>
+
+  <!-- select the type of problem to run -->
+  <arg name="problem_setup" default="HotelA.json" doc=""/>
+
+  <!-- whether we are using real observations or a mockup generated via gui -->
+  <arg name="mockup_gui" default="true" />
+
+  <!-- Launch the intention_recognition_ros_node -->
+  <node pkg="intention_recognition_ros" type="intention_recognition_ros_node"
+        name="intention_recognition_node" output="screen"
+        args="--paramFile $(find intention_recognition_ros)/params/hotel_params.input
+              --problemFile $(find intention_recognition_ros)/params/insectHotel.prob
+              --domainFile $(find intention_recognition_ros)/params/$(arg problem_setup)
+              --use_mockup_gui $(arg mockup_gui)">
+  </node>
+
+</launch>

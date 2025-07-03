@@ -1,0 +1,56 @@
+{
+    "objects":
+        [
+        {
+            "name": "Insect Hotel",
+            "parts": [0,1,2,3,4,5]
+        },
+        {
+            "name": "Insect Hotel",
+            "parts": [0,2,3,5,6,7]
+        }
+        ],	
+	"parts":
+        [            
+        {
+            "name": "Bright Green",
+            "priority": 1,
+            "cost": 0
+        },
+        {
+            "name": "Dark Green",
+            "priority": 1,
+            "cost": 0
+        },
+        {
+            "name": "Magenta",
+            "priority": 1,
+            "cost": 0
+        },
+        {
+            "name": "Purple",
+            "priority": 1,
+            "cost": 0
+        },
+        {
+            "name": "Red",
+            "priority": 1,
+            "cost": 0
+        },
+        {
+            "name": "Yellow",
+            "priority": 1,
+            "cost": 0
+        },
+        {
+            "name": "Black",
+            "priority": 1,
+            "cost": 0
+        },
+        {
+            "name": "Orange",
+            "priority": 1,
+            "cost": 0
+        }
+    ]	
+}

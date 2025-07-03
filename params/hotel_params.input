@@ -1,0 +1,7 @@
+problem hotel
+outputFile insect_hotel.out
+nSims 18
+policy 3
+ire 0
+verbose 1
+timeout 3600

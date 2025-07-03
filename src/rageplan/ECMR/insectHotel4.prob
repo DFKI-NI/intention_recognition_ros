@@ -1,0 +1,9 @@
+problem hotel
+expertise 0.9
+perceive 0.65
+bringSuccess 1.0
+activation -6
+discount 0.99
+fDiscount 0.5
+PGSAlpha 10
+transitionRate 0.1
