@@ -9,18 +9,22 @@
   <license>BSD</license>
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>roscpp</build_depend>
-  <build_depend>intention_recognition_msgs</build_depend>
+  <build_depend>rospy</build_depend>
+  <build_depend>message_generation</build_depend>
   <build_depend>actionlib</build_depend>
+  <build_depend>actionlib_msgs</build_depend>
   <build_depend>rapidjson-dev</build_depend>
   <build_depend>tables_demo_planning</build_depend>
 
   <build_export_depend>roscpp</build_export_depend>
-  <build_export_depend>intention_recognition_msgs</build_export_depend>
+  <build_export_depend>rospy</build_export_depend>
   <build_export_depend>tables_demo_planning</build_export_depend>
 
   <exec_depend>roscpp</exec_depend>
-  <exec_depend>intention_recognition_msgs</exec_depend>
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>message_runtime</exec_depend>
   <exec_depend>actionlib</exec_depend>
+  <exec_depend>actionlib_msgs</exec_depend>
   <exec_depend>rapidjson-dev</exec_depend>
   <exec_depend>tables_demo_planning</exec_depend>
 

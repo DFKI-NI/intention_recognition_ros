@@ -6,7 +6,7 @@
 #include "rrlib/rrlib_hotel.h"
 
 #include <ros/ros.h>
-#include <intention_recognition_msgs/Intention.h>
+#include <intention_recognition_ros/Intention.h>
 
 int main( int argc, char** argv )
 {

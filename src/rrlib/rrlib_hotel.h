@@ -27,7 +27,7 @@
 //ROS includes
 #include <ros/ros.h>
 //Perception actions
-#include <intention_recognition_msgs/Intention.h>
+#include <intention_recognition_ros/Intention.h>
 //Manipulation actions
 #include <actionlib/client/simple_action_client.h>
 #include <tables_demo_planning/PlanAndExecuteTasksAction.h>
@@ -43,7 +43,7 @@ class RRLIB_HOTEL{
         int n_types;
         STATE dummyState; //for POMDP functions that require a state param even though it is not used
 
-        void GetObsFromMSG(intention_recognition_msgs::Intention srv_msg, int& observation, double& accuracy, bool& terminal);
+        void GetObsFromMSG(intention_recognition_ros::Intention srv_msg, int& observation, double& accuracy, bool& terminal);
         int ParseMSGContent(string target, vector<string> options);
 
     public:

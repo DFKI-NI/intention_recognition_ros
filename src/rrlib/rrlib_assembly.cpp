@@ -156,7 +156,7 @@ int RRLIB_ASSEMBLY::ROSRun(int argc, char ** argv){
 */
     ros::init(argc, argv, "intention_recognition_node");
     ros::NodeHandle nh;
-    ros::ServiceClient perceptionClient = nh.serviceClient<intention_recognition_msgs::Intention>("intention_recognition");
+    ros::ServiceClient perceptionClient = nh.serviceClient<intention_recognition_ros::Intention>("intention_recognition");
 
     bool serviceAvailable = ros::service::waitForService("intention_recognition", ros::Duration(5.0));
 
@@ -165,18 +165,18 @@ int RRLIB_ASSEMBLY::ROSRun(int argc, char ** argv){
         return -1;
     }
 
-	intention_recognition_msgs::Intention srv_msg;	
+	intention_recognition_ros::Intention srv_msg;	
 /*
     INITIALIZE MANIPULATION CLIENT
 */
-    actionlib::SimpleActionClient<intention_recognition_msgs::PlanAndExecuteAction> actionClient("incorap/planning/plan_and_execute", true);
+    actionlib::SimpleActionClient<intention_recognition_ros::PlanAndExecuteAction> actionClient("incorap/planning/plan_and_execute", true);
     
     if(!actionClient.waitForServer(ros::Duration(5,0))){
         ROS_ERROR("Action service for intention recognition not available");
         return -1;
     }
 
-    intention_recognition_msgs::PlanAndExecuteGoal goal;
+    intention_recognition_ros::PlanAndExecuteGoal goal;
 /*
     PROCEED WITH PLANNING
 */
@@ -254,12 +254,12 @@ int RRLIB_ASSEMBLY::ROSRun(int argc, char ** argv){
             ROS_INFO("Attempting to execute action on Mobipick...");
             actionClient.sendGoalAndWait(goal);
             ROS_INFO("Action finished on Mobipick.");
-            intention_recognition_msgs::PlanAndExecuteResultConstPtr result = actionClient.getResult();
+            intention_recognition_ros::PlanAndExecuteResultConstPtr result = actionClient.getResult();
 //            cout << result->success << "," << result->message << endl;
             ROS_INFO("Success: %i, Message: %s", result->success, result->message.c_str());
             
 
-            //intention_recognition_msgs::PlanAndExecuteResult result = *(actionClient.getResult());
+            //intention_recognition_ros::PlanAndExecuteResult result = *(actionClient.getResult());
             //ROS_INFO("Outcome: %B, Message: %s",result.success, result.message.c_str());
         }
         else if (actionType == UNKNOWN_ACTION){
@@ -299,7 +299,7 @@ int RRLIB_ASSEMBLY::ROSRun(int argc, char ** argv){
 /*
     Process ROS MSG and extract observation info
 */
-void RRLIB_ASSEMBLY::GetObsFromMSG(intention_recognition_msgs::Intention srv_msg, int& observation, double& accuracy){
+void RRLIB_ASSEMBLY::GetObsFromMSG(intention_recognition_ros::Intention srv_msg, int& observation, double& accuracy){
     // Worker activity
     if(srv_msg.request.observation_type == srv_msg.request.OBSERVE_WORKER){  
         ROS_INFO("Observe worker");

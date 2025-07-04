@@ -1,0 +1,280 @@
+#!/usr/bin/env python3
+
+"""
+offers a service /intention_perception that responds specific queries
+about the progress of the hotel, the status of the local inventory and the insect hotel type.
+"""
+
+import random
+import rospy
+
+from typing import Deque
+from dataclasses import dataclass, field
+from collections import deque
+from vision_msgs.msg import Detection3DArray
+from object_pose_msgs.msg import ObjectList
+from intention_recognition_ros.srv import (
+    Intention,
+    IntentionResponse,
+    IntentionRequest,
+)
+from intention_recognition_ros.msg import IntentionObs
+
+@dataclass
+class Detections:
+    parts_available: dict = field(default_factory= lambda: {
+        0: False,
+        1: False,
+        2: False,
+        3: False,
+        4: False,
+        5: False,
+        6: False,
+        7: False,
+    })
+
+class ActivityRecognitionNode:
+    def __init__(self):
+        self.lock_worker_cam = False
+        self.lock_inventory_cam = False
+        self.current_worker_cam_state: Deque['Detections'] = deque(maxlen=5)
+        self.current_inventory_cam_state: Deque['Detections'] = deque(maxlen=5)
+
+        self.id_to_color_dic = {
+            0: "bright_green_part",
+            1: "dark_green_part",
+            2: "magenta_part",
+            3: "purple_part",
+            4: "red_part",
+            5: "yellow_part",
+            6: "black_part",
+            7: "orange_part",
+        }
+
+        self._storage_observation_accuracy = rospy.get_param(
+            "~storage_observation_accuracy", default=0.8
+        )
+        self._assembly_progress_accuracy = rospy.get_param(
+            "~assembly_progress_accuracy", default=0.8
+        )
+        self._hotel_type_accuracy = rospy.get_param("~hotel_type_accuracy", default=0.8)
+
+        self._simulation = rospy.get_param("~simulation", default=False)
+        # speak IR actions
+        self.ir_node_name = rospy.get_param(
+            "~intention_recognition_node_name", "/intention_recognition_node"
+        )
+        inventory_cam_poses_topic = rospy.get_param(
+            "~inventory_cam_detection_topic", "/inventory_cam/poses"
+        )
+        worker_cam_poses_topic = rospy.get_param(
+            "~worker_cam_detection_topic", "/worker_cam/poses"
+        )
+        if self._simulation:
+            rospy.Subscriber(
+                inventory_cam_poses_topic, ObjectList, self.simulatedInventoryCamCB
+            )
+            rospy.Subscriber(
+                worker_cam_poses_topic, ObjectList, self.simulatedWorkerCamCB
+            )
+        else:
+            rospy.Subscriber(
+                inventory_cam_poses_topic, Detection3DArray, self.inventoryCamCB
+            )
+            rospy.Subscriber(worker_cam_poses_topic, Detection3DArray, self.workerCamCB)
+        self.service = rospy.Service(
+            "/intention_perception", Intention, self.handle_intention_request
+        )
+        rospy.loginfo("observation server node initialized")
+
+    def process_detections(self, cam_type, detection_results):
+        """
+        List of detection results:
+        [
+            # Unique object id
+            int64 id
+            # Confidence value of the detected object
+            float64 score
+            # The 6D pose of the object
+            geometry_msgs/PoseWithCovariance pose
+        ]
+        """
+        new_detections = Detections()
+        if cam_type == "inventory_cam":
+            noise = self._storage_observation_accuracy
+        else:
+            noise = self._assembly_progress_accuracy
+        for det in detection_results:
+            new_detections.parts_available[det.results[0].id] = random.random() < noise
+        if cam_type == "inventory_cam":
+            self.current_inventory_cam_state.append(new_detections)
+        elif cam_type == "worker_cam":
+            self.current_worker_cam_state.append(new_detections)
+
+    def process_simulated_detections(self, cam_type, detection_results):
+        new_detections = Detections()
+        if cam_type == "inventory_cam":
+            noise = self._storage_observation_accuracy
+        else:
+            noise = self._assembly_progress_accuracy
+        for det in detection_results:
+            if det.class_id in list(self.id_to_color_dic.values()):
+                new_detections.parts_available[
+                    list(self.id_to_color_dic.keys())[
+                        list(self.id_to_color_dic.values()).index(det.class_id)
+                    ]
+                ] = (random.random() < noise)
+        if cam_type == "inventory_cam":
+            self.current_inventory_cam_state.append(new_detections)
+        elif cam_type == "worker_cam":
+            self.current_worker_cam_state.append(new_detections)
+
+    def workerCamCB(self, msg: Detection3DArray):
+        if self.lock_worker_cam:
+            return
+        self.lock_worker_cam = True  # halt new observations while we process the data
+        self.process_detections("worker_cam", msg.detections)
+        self.lock_worker_cam = False  # allow new observations again
+
+    def simulatedWorkerCamCB(self, msg: ObjectList):
+        if self.lock_worker_cam:
+            return
+        self.lock_worker_cam = True  # halt new observations while we process the data
+        self.process_simulated_detections("worker_cam", msg.objects)
+        self.lock_worker_cam = False  # allow new observations again
+
+    def inventoryCamCB(self, msg: Detection3DArray):
+        if self.lock_inventory_cam:
+            return
+        self.lock_inventory_cam = True
+        self.process_detections("inventory_cam", msg.detections)
+        self.lock_inventory_cam = False
+
+    def simulatedInventoryCamCB(self, msg: ObjectList):
+        if self.lock_worker_cam:
+            return
+        self.lock_worker_cam = True  # halt new observations while we process the data
+        self.process_simulated_detections("inventory_cam", msg.objects)
+        self.lock_worker_cam = False  # allow new observations again
+
+    def handle_observe_hotel_progress(self):
+        """
+        Hotel progress (worker cam)
+        """
+        intention_observation_msg = IntentionObs()
+
+        if len(self.current_worker_cam_state) > 0:
+            intention_observation_msg.worker_parts = list(self.current_worker_cam_state[-1].parts_available.values())
+        else:
+            intention_observation_msg.worker_parts = list(Detections().parts_available.values())
+        intention_observation_msg.worker_accuracy = self._assembly_progress_accuracy
+        return intention_observation_msg
+
+    def handle_observe_local_storage(self):
+        """
+        Storage close to the worker which is visible by parts cam
+        """
+        # initialize random response msg
+        intention_observation_msg = IntentionObs()
+        if len(self.current_inventory_cam_state) > 0:
+            intention_observation_msg.storage_parts = list(self.current_inventory_cam_state[-1].parts_available.values())
+        else:
+            intention_observation_msg.storage_parts = list(Detections().parts_available.values())
+        intention_observation_msg.storage_accuracy = self._storage_observation_accuracy
+
+        return intention_observation_msg
+
+    def get_local_storage_value_by_id(self, intention_id):
+        if len(self.current_inventory_cam_state) > 0:
+            return self.current_inventory_cam_state[-1].parts_available[intention_id]
+        else:
+            return False
+        # return any(
+        #     [
+        #         status[intention_id]
+        #         for status in self.current_inventory_cam_state
+        #         if intention_id in status
+        #     ]
+        # )
+
+    def get_worker_progress_value_by_id(self, intention_id):
+        if len(self.current_worker_cam_state) > 0:
+            return self.current_worker_cam_state[-1].parts_available[intention_id]
+        else:
+            return False
+        # return any(
+        #     [
+        #         status[intention_id]
+        #         for status in self.current_worker_cam_state
+        #         if intention_id in status
+        #     ]
+        # )
+
+    def handle_intention_request(self, req):
+        """
+        Service callback function to handle intention recognition requests
+        """
+        # initialize empty response msg
+        intention_observation_msg = IntentionObs()
+        response = IntentionResponse()
+
+        # 1. OBSERVE HOTEL TYPE (based on the color of the side part)
+        if req.observation_type == IntentionRequest.OBSERVE_HOTEL_TYPE:
+            rospy.loginfo("Received request to observe hotel type")
+            accuracy = self._hotel_type_accuracy
+            hotel_type = 0
+            if (
+                # Check if red or dark green part is detected and orange or black is not
+                (self.get_worker_progress_value_by_id(4) or self.get_worker_progress_value_by_id(1))
+                and not (self.get_worker_progress_value_by_id(7) or self.get_worker_progress_value_by_id(6))
+            ):
+                hotel_type = 1 if (random.random() < accuracy) else 2
+            elif (
+                # Check if orange or black part is detected and red or dark green is not
+                (self.get_worker_progress_value_by_id(7) or self.get_worker_progress_value_by_id(6))
+                and not (self.get_worker_progress_value_by_id(4) or self.get_worker_progress_value_by_id(1))
+            ):
+                hotel_type = 2 if (random.random() < accuracy) else 1
+            else:
+                # if type is unknown then return 0, which means unknown
+                hotel_type = 0
+                accuracy = 0.5
+            if hotel_type == 0:
+                rospy.loginfo("Hotel type is not known, reporting random type")
+            elif hotel_type == 1:
+                rospy.loginfo("Hotel type A detected")
+            elif hotel_type == 2:
+                rospy.loginfo("Hotel type B detected")
+            intention_observation_msg.object_type = hotel_type
+            intention_observation_msg.object_type_accuracy = accuracy
+
+        # 2. OBSERVE HOTEL PROGRESS (with worker camera)
+        elif req.observation_type == IntentionRequest.OBSERVE_HOTEL_PROGRESS:
+            rospy.loginfo("received request to observe hotel progress")
+            # wait for processing of worker cam data (in case is processing)
+            while self.lock_worker_cam:
+                rospy.sleep(0.01)
+            self.lock_worker_cam = True  # halt new observations
+            intention_observation_msg = self.handle_observe_hotel_progress()
+            self.lock_worker_cam = False  # allow new observations again
+
+        # 3. OBSERVE LOCAL STORAGE with local inventory camera (area within workers reach)
+        elif req.observation_type == IntentionRequest.OBSERVE_LOCAL_STORAGE:
+            rospy.loginfo("received request to observe local storage")
+            # wait for processing of local inventory cam data (in case is processing)
+            while self.lock_inventory_cam:
+                rospy.sleep(0.01)
+            self.lock_inventory_cam = True  # halt new observations
+            intention_observation_msg = self.handle_observe_local_storage()
+            self.lock_inventory_cam = False  # allow new observations again
+        else:
+            rospy.logerr("no such observation type is available")
+
+        response.intention_observation = intention_observation_msg
+        return response
+
+
+if __name__ == "__main__":
+    rospy.init_node("intention_perception_node")
+    activity_ir_server = ActivityRecognitionNode()
+    rospy.spin()

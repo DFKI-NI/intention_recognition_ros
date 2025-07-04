@@ -27,10 +27,10 @@
 //ROS includes
 #include <ros/ros.h>
 //Perception actions
-#include <intention_recognition_msgs/Intention.h>
+#include <intention_recognition_ros/Intention.h>
 //Manipulation actions
 #include <actionlib/client/simple_action_client.h>
-#include <intention_recognition_msgs/PlanAndExecuteAction.h>
+#include <intention_recognition_ros/PlanAndExecuteAction.h>
 
 class RRLIB_ASSEMBLY{
     private:
@@ -41,7 +41,7 @@ class RRLIB_ASSEMBLY{
         int n_types;
         STATE dummyState; //for POMDP functions that require a state param even though it is not used
 
-        void GetObsFromMSG(intention_recognition_msgs::Intention srv_msg, int& observation, double& accuracy);
+        void GetObsFromMSG(intention_recognition_ros::Intention srv_msg, int& observation, double& accuracy);
         int ParseMSGContent(string target, vector<string> options);
 
     public:

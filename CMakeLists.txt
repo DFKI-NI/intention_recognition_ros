@@ -1,17 +1,40 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.5.1)
 project(intention_recognition_ros)
 
 add_compile_options(-std=c++11)
 
-find_package(catkin REQUIRED
+find_package(catkin REQUIRED COMPONENTS
   roscpp
-  intention_recognition_msgs
-  actionlib 
+  message_generation
+  actionlib
+  actionlib_msgs
   tables_demo_planning
 )
 
+add_message_files(
+  DIRECTORY msg
+  FILES
+  IntentionObs.msg
+)
+
+add_service_files(
+  DIRECTORY srv
+  FILES
+  Intention.srv
+)
+
+add_action_files(
+  DIRECTORY action
+  FILES
+  PlanAndExecute.action
+)
+
+generate_messages(
+  DEPENDENCIES actionlib_msgs
+)
+
 catkin_package(
-  CATKIN_DEPENDS roscpp intention_recognition_msgs actionlib tables_demo_planning
+  CATKIN_DEPENDS roscpp message_runtime actionlib actionlib_msgs tables_demo_planning
 )
 
 include_directories(
@@ -39,4 +62,11 @@ add_executable(${PROJECT_NAME}_node src/IR_ROS_NODE.cpp ${RRL_SOURCE})
 
 target_link_libraries(${PROJECT_NAME}_node
   ${catkin_LIBRARIES}
+)
+
+add_dependencies(${PROJECT_NAME}_node intention_recognition_ros_generate_messages_cpp)
+
+catkin_install_python(PROGRAMS
+  nodes/activity_recognition_node
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )

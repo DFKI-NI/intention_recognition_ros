@@ -1,0 +1,12 @@
+# request
+
+int8 OBSERVE_HOTEL_TYPE=1
+int8 OBSERVE_HOTEL_PROGRESS=2
+int8 OBSERVE_LOCAL_STORAGE=3
+
+int8 observation_type
+
+---
+# response
+
+intention_recognition_ros/IntentionObs intention_observation

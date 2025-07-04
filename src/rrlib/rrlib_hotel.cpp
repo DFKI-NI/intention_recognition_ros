@@ -176,7 +176,7 @@ int RRLIB_HOTEL::ROSRun(int argc, char ** argv){
         ROS_INFO("Using Mockup GUI");
     else
         ROS_INFO("NOT using Mockup GUI");
-    ros::ServiceClient perceptionClient = nh.serviceClient<intention_recognition_msgs::Intention>("intention_perception");
+    ros::ServiceClient perceptionClient = nh.serviceClient<intention_recognition_ros::Intention>("intention_perception");
 
     bool serviceAvailable = ros::service::waitForService("intention_perception", ros::Duration(5.0));
 
@@ -185,7 +185,7 @@ int RRLIB_HOTEL::ROSRun(int argc, char ** argv){
         return -1;
     }
 
-	intention_recognition_msgs::Intention srv_msg;
+	intention_recognition_ros::Intention srv_msg;
 /*
     INITIALIZE MANIPULATION CLIENT
 */
@@ -337,7 +337,7 @@ int RRLIB_HOTEL::ROSRun(int argc, char ** argv){
     Process ROS MSG and extract observation info
     TODO: Adapt to process correct observation contents, i.e. boolean array
 */
-void RRLIB_HOTEL::GetObsFromMSG(intention_recognition_msgs::Intention srv_msg, int& observation, double& accuracy, bool& terminal){
+void RRLIB_HOTEL::GetObsFromMSG(intention_recognition_ros::Intention srv_msg, int& observation, double& accuracy, bool& terminal){
     // Hotel progress, i.e. parts assembled
     if(srv_msg.request.observation_type == srv_msg.request.OBSERVE_HOTEL_PROGRESS){
         ROS_INFO("Observe hotel progress:");
